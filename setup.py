@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-MyApp Setup
+OutputCatcher Setup
 
 -Christopher Welborn 12-05-2016
 """
@@ -49,7 +49,7 @@ else:
 
 setup(
     name='OutputCatcher',
-    version='0.0.2',
+    version='0.0.3',
     author='Christopher Welborn',
     author_email='cj@welbornprod.com',
     packages=['outputcatcher'],

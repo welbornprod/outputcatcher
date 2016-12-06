@@ -10,7 +10,11 @@
 import sys
 import unittest
 
-from outputcatcher import __version__, StdErrCatcher, StdOutCatcher
+from outputcatcher import (
+    __version__,
+    StdErrCatcher,
+    StdOutCatcher
+)
 
 
 class OutputCatcherTests(unittest.TestCase):
@@ -29,6 +33,31 @@ class OutputCatcherTests(unittest.TestCase):
             f,
             'name',
             getattr(f, '__name__', type(f).__name__)
+        )
+
+    def test_both_catchers(self):
+        """ Both catchers should run as a context manager at the same time.
+        """
+        teststr = 'This is a test for both catchers.'
+        teststrerr = 'This is a stderr test for both cathers.'
+        with StdOutCatcher() as out:
+            with StdErrCatcher() as err:
+                sys.stdout.write(teststr)
+                sys.stderr.write(teststrerr)
+
+        self.assertEqual(
+            err.output,
+            teststrerr,
+            msg='Failed to catch output on {}!'.format(
+                self.get_fileobj_name(sys.stderr),
+            )
+        )
+        self.assertEqual(
+            out.output,
+            teststr,
+            msg='Failed to catch output on {}!'.format(
+                self.get_fileobj_name(sys.stdout),
+            )
         )
 
     def test_StdErrCatcher(self):
@@ -54,7 +83,7 @@ class OutputCatcherTests(unittest.TestCase):
         self.assertEqual(
             out.output,
             repr(teststr)[1:-1],
-            msg='Failed to catch output on {} with StdErrCatcher!'.format(
+            msg='Failed to escape output on {} with StdErrCatcher!'.format(
                 self.get_fileobj_name(sys.stderr),
             )
         )
@@ -82,7 +111,7 @@ class OutputCatcherTests(unittest.TestCase):
         self.assertEqual(
             out.output,
             teststr[:maxlength],
-            msg='Failed to catch output on {} with StdErrCatcher!'.format(
+            msg='Failed to trim output on {} with StdErrCatcher!'.format(
                 self.get_fileobj_name(sys.stderr),
             )
         )
@@ -110,7 +139,7 @@ class OutputCatcherTests(unittest.TestCase):
         self.assertEqual(
             out.output,
             repr(teststr)[1:-1],
-            msg='Failed to catch output on {} with StdOutCatcher!'.format(
+            msg='Failed to escape output on {} with StdOutCatcher!'.format(
                 self.get_fileobj_name(sys.stdout),
             )
         )
@@ -138,7 +167,7 @@ class OutputCatcherTests(unittest.TestCase):
         self.assertEqual(
             out.output,
             teststr[:maxlength],
-            msg='Failed to catch output on {} with StdOutCatcher!'.format(
+            msg='Failed to trim output on {} with StdOutCatcher!'.format(
                 self.get_fileobj_name(sys.stdout),
             )
         )

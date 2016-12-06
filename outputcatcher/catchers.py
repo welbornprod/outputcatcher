@@ -3,7 +3,12 @@
 import sys
 from io import UnsupportedOperation
 
-__version__ = '0.0.4'
+__version__ = '0.0.5'
+
+
+def escape_output(s):
+    """ Escape output using python's repr(). """
+    return repr(s)[1:-1]
 
 
 class StdOutCatcher(object):
@@ -17,8 +22,6 @@ class StdOutCatcher(object):
             # retrieve the captured output..
             print('output was: {}'.format(fakestdout.output))
     """
-    stdout = sys.stdout
-
     def __init__(self, escaped=False, max_length=160):
         # Use safe_output?
         self.escaped = escaped
@@ -38,12 +41,16 @@ class StdOutCatcher(object):
         # Fix stdout.
         sys.stdout = sys.__stdout__
 
+    def flush(self):
+        """ Doesn't do anything, but it's here for compatibility. """
+        return None
+
     @property
     def name(self):
         return getattr(
-            self.stdout,
+            sys.stdout,
             'name',
-            getattr(self.stdout, '__name__', type(self.stdout).__name__)
+            getattr(sys.stdout, '__name__', type(sys.stdout).__name__)
         )
 
     @property
@@ -54,17 +61,16 @@ class StdOutCatcher(object):
     def output(self, value):
         """ Sets self._output, escaping first if self.escaped is truthy. """
         if self.escaped:
-            self._output = self.make_safe(value)
+            self._output = escape_output(value)
             return None
         self._output = value
         return None
 
-    @staticmethod
-    def make_safe(s):
-        """ Escape output using python's repr(). """
-        return repr(s)[1:-1]
-
     def write(self, s):
+        if not isinstance(s, str):
+            raise TypeError('write() expects a str, got: {}'.format(
+                type(s).__name__
+            ))
         if (not s) or self.max_exceeded:
             # Nothing to write, or max-length was already exceeded.
             return 0
@@ -81,14 +87,8 @@ class StdOutCatcher(object):
         self.length = len(self.output)
         return len(s)
 
-    def writeln(self, s):
-        """ Convenience method for green.output.GreenStreams. """
-        return self.write('{}\n'.format(s))
-
 
 class StdErrCatcher(StdOutCatcher):
-    stderr = sys.stderr
-
     def __enter__(self):
         # Replace stderr with self, stderr.write() will be self.write()
         sys.stderr = self
@@ -101,7 +101,7 @@ class StdErrCatcher(StdOutCatcher):
     @property
     def name(self):
         return getattr(
-            self.stderr,
+            sys.stderr,
             'name',
-            getattr(self.stderr, '__name__', type(self.stderr).__name__)
+            getattr(sys.stderr, '__name__', type(sys.stderr).__name__)
         )

@@ -49,7 +49,7 @@ else:
 
 setup(
     name='OutputCatcher',
-    version='0.0.1',
+    version='0.0.2',
     author='Christopher Welborn',
     author_email='cj@welbornprod.com',
     packages=['outputcatcher'],

@@ -9,12 +9,12 @@ A context manager that catches/suppresses output from `sys.stderr` and
 from outputcatcher import StdErrCatcher, StdOutCatcher
 
 # Catching stdout
-with StdOutCatcher(safe=False, maxlength=0) as fakeout:
+with StdOutCatcher() as fakeout:
     print('This is a test. you shouldn\'t see it right away.')
 print('Captured stdout: {}'.format(fakeout.output))
 
 # Catching stderr
-with StdErrCatcher(safe=False, maxlength=0) as fakeerr:
+with StdErrCatcher() as fakeerr:
     print('Testing stderr output.', file=sys.stderr)
 print('Captured stderr: {}'.format(fakeerr.output))
 ```
@@ -22,10 +22,13 @@ print('Captured stderr: {}'.format(fakeerr.output))
 ## API
 
 ```python
-StdOutCatcher(safe=False, maxlength=0)
+StdOutCatcher(escaped=False, max_length=0)
 ```
 
 ### Arguments
 
-- `safe`: If truthy, output is "encoded" using `repr()`. Default: `False`
-- `maxlength`: If non-zero, trim each `write()` call to `maxlength`. Default: `0`
+- `escaped`: If truthy, output is "encoded" using `repr()`, but without quotes.
+Default: `False`
+- `max_length`: If non-zero, final output will not exceed `max_length`.
+Once `max_length` is reached, further `write()` calls will not write to the original stream.
+Default: `0`

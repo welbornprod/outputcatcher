@@ -3,7 +3,7 @@
 import sys
 from io import UnsupportedOperation
 
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 
 
 class StdOutCatcher(object):

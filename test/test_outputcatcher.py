@@ -7,11 +7,13 @@
     -Christopher Welborn 12-06-2016
 """
 
+import os
 import sys
 import unittest
 
 from outputcatcher import (
     __version__,
+    ProcessOutput,
     StdErrCatcher,
     StdOutCatcher
 )
@@ -172,6 +174,41 @@ class OutputCatcherTests(unittest.TestCase):
             )
         )
 
+
+class ProcessOutputTests(unittest.TestCase):
+    """ Tests for the ProcessOutput object. """
+
+    @unittest.skipUnless(os.path.exists('/bin/ls'), 'Missing ls exe.')
+    def test_ProcessOutput(self):
+        """ ProcessOutput should receive stdout or stderr. """
+        with ProcessOutput(['ls']) as out:
+            self.assertGreater(
+                len(out.stdout),
+                0,
+                msg='Failed to get stdout output from ProcessOutput!'
+            )
+        with ProcessOutput(['ls', '/totally_nonexistent_dir']) as out:
+            self.assertGreater(
+                len(out.stderr),
+                0,
+                msg='Failed to get stderr output from ProcessOutput!'
+            )
+
+    @unittest.skipUnless(os.path.exists('/bin/cat'), 'Missing cat exe.')
+    def test_ProcessOutput_stdin(self):
+        """ ProcessOutput should pipe stdin as a string to the process. """
+        stdinstr = 'This is a test.'
+        with ProcessOutput(['cat'], stdin_data=stdinstr) as out:
+            self.assertGreater(
+                len(out.stdout),
+                0,
+                msg='Failed to get output when piping stdin data!'
+            )
+            self.assertEqual(
+                out.stdout.decode(),
+                stdinstr,
+                msg='Failed to pipe stdin data, and receive it from `cat`!'
+            )
 
 if __name__ == '__main__':
     sys.exit(unittest.main(argv=sys.argv))

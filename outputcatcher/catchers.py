@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import subprocess
 import sys
+from collections import namedtuple
 from io import UnsupportedOperation
+from tempfile import SpooledTemporaryFile
 
 __version__ = '0.0.5'
 
@@ -9,6 +12,97 @@ __version__ = '0.0.5'
 def escape_output(s):
     """ Escape output using python's repr(). """
     return repr(s)[1:-1]
+
+
+class ProcessOutput(object):
+    """ Uses subprocess to run a process and stores all stdout/stderr
+        output as bytes.
+        The ProcessOutput object can be used as a context manager, or the
+        run() method must be called after inititalization.
+        Output is stored in self.stdout and self.stderr as bytes.
+        The output must be decoded.
+    """
+    # Holds data returned by ProcessOutput.proc_output()
+    ProcOutput = namedtuple('ProcOutput', ('stdout', 'stderr'))
+
+    def __init__(self, args, stdin_data=None, timeout=None, **popenkwargs):
+        """ Initialize a ProcessOutput object to be used as a context manager,
+            or by calling self.run() afterwards.
+            Arguments:
+                args           : Command arguments, same as subprocess.Popen.
+                stdin_data     : str or bytes to send to command as stdin.
+                timeout        : Time to wait for process after collecting
+                                 the output.
+                **popenkwargs  : Any extra kwargs for Popen().
+        """
+        self.proc = None
+        self.pid = None
+        self.returncode = None
+        self.timeout = timeout
+        self.stdout = b''
+        self.stderr = b''
+        self.args = args
+        self.stdin_data = stdin_data
+        self.popenkwargs = popenkwargs
+
+    def __enter__(self):
+        self.stdout, self.stderr = b'', b''
+        self.run()
+        return self
+
+    def __exit__(self, exctype, value, traceback):
+        return False
+
+    def proc_output(self, proc):
+        """ Get process output, whether its on stdout or stderr.
+            Returns a tuple of strings (stdout_output, stderr_output).
+
+            Arguments:
+                proc  : a POpen() process to get output from.
+        """
+        # Get stdout
+        outlines = []
+        for line in iter(proc.stdout.readline, b''):
+            if line:
+                outlines.append(line.rstrip(b'\n'))
+            else:
+                break
+        # Get stderr
+        errlines = []
+        for line in iter(proc.stderr.readline, b''):
+            if line:
+                errlines.append(line.rstrip(b'\n'))
+            else:
+                break
+        return self.ProcOutput(b'\n'.join(outlines), b'\n'.join(errlines))
+
+    def run(self, timeout=None):
+        """ Run the command specified during init, and set self.stdout/stderr.
+            A ProcOutput (namedtuple) is returned with
+            (stdout_data, stderr_data) stored as bytes.
+            The output must be decoded (same as subprocess).
+        """
+        if self.stdin_data is None:
+            stdin_file = None
+        else:
+            stdin_file = TempStdinInput(self.stdin_data)
+
+        # These keyword arguments cannot be changed by the user.
+        popenkwargs = {k: v for k, v in self.popenkwargs.items()}
+        popenkwargs.update({
+            'stdin': None if stdin_file is None else stdin_file.open(),
+            'stdout': subprocess.PIPE,
+            'stderr': subprocess.PIPE,
+        })
+
+        self.proc = subprocess.Popen(self.args, **popenkwargs)
+        self.pid = self.proc.pid
+        if stdin_file is not None:
+            stdin_file.close()
+        procoutput = self.proc_output(self.proc)
+        self.stdout, self.stderr = procoutput
+        self.returncode = self.proc.wait(timeout=timeout or self.timeout)
+        return procoutput
 
 
 class StdOutCatcher(object):
@@ -105,3 +199,27 @@ class StdErrCatcher(StdOutCatcher):
             'name',
             getattr(sys.stderr, '__name__', type(sys.stderr).__name__)
         )
+
+
+class TempStdinInput(object):
+    """ Creates a file-like object from a string, to be used as stdin
+        input for ProcessOutput().
+    """
+    def __init__(self, data):
+        self.tempfile = SpooledTemporaryFile()
+        self.tempfile.write(data.encode() if isinstance(data, str) else data)
+        self.tempfile.seek(0)
+
+    def __enter__(self):
+        return self.tempfile
+
+    def __exit__(self, exctype, value, traceback):
+        self.tempfile.close()
+        return False
+
+    def close(self):
+        self.tempfile.close()
+
+    def open(self):
+        # It's already open.
+        return self.tempfile

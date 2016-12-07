@@ -49,21 +49,20 @@ else:
 
 setup(
     name='OutputCatcher',
-    version='0.0.4',
+    version='0.0.5',
     author='Christopher Welborn',
     author_email='cj@welbornprod.com',
     packages=['outputcatcher'],
     url='http://pypi.python.org/pypi/OutputCatcher/',
     description=shortdesc,
     long_description=longdesc,
-    keywords=('python module library 2 3 stdout stderr catch silence'),
+    keywords=('python module library 3 stdout stderr catch silence'),
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3 :: Only',
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],

@@ -210,5 +210,20 @@ class ProcessOutputTests(unittest.TestCase):
                 msg='Failed to pipe stdin data, and receive it from `cat`!'
             )
 
+    def test_ProcessOutput_stdin_bytes(self):
+        """ ProcessOutput should pipe stdin as bytes to the process. """
+        stdinbytes = 'This is a test.'.encode()
+        with ProcessOutput(['cat'], stdin_data=stdinbytes) as out:
+            self.assertGreater(
+                len(out.stdout),
+                0,
+                msg='Failed to get output when piping stdin data!'
+            )
+            self.assertEqual(
+                out.stdout,
+                stdinbytes,
+                msg='Failed to pipe stdin data, and receive it from `cat`!'
+            )
+
 if __name__ == '__main__':
     sys.exit(unittest.main(argv=sys.argv))

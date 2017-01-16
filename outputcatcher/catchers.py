@@ -3,10 +3,9 @@
 import subprocess
 import sys
 from collections import namedtuple
-from io import UnsupportedOperation
 from tempfile import SpooledTemporaryFile
 
-__version__ = '0.0.5'
+__version__ = '0.0.6'
 
 
 def escape_output(s):
@@ -21,6 +20,17 @@ class ProcessOutput(object):
         run() method must be called after inititalization.
         Output is stored in self.stdout and self.stderr as bytes.
         The output must be decoded.
+
+
+        NOTE:
+            As of Python 3.4+, you can use:
+                subprocess.check_output(input=b'test')`
+            or:
+                `subprocess.run(..., input=b'test')`
+            ..for simple cases.
+            ProcessOutput can still be useful for programs that output both
+            `stdout` and `stderr` though.
+
     """
     # Holds data returned by ProcessOutput.proc_output()
     ProcOutput = namedtuple('ProcOutput', ('stdout', 'stderr'))
@@ -46,7 +56,8 @@ class ProcessOutput(object):
         self.popenkwargs = popenkwargs
 
     def __enter__(self):
-        self.stdout, self.stderr = b'', b''
+        self.stdout = b''
+        self.stderr = b''
         self.run()
         return self
 
@@ -207,6 +218,7 @@ class TempStdinInput(object):
     """
     def __init__(self, data):
         self.tempfile = SpooledTemporaryFile()
+        # Write data to our file, then seek back to 0 for reading.
         self.tempfile.write(data.encode() if isinstance(data, str) else data)
         self.tempfile.seek(0)
 
@@ -214,7 +226,7 @@ class TempStdinInput(object):
         return self.tempfile
 
     def __exit__(self, exctype, value, traceback):
-        self.tempfile.close()
+        self.close()
         return False
 
     def close(self):

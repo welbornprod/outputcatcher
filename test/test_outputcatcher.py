@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """ test_outputcatcher.py
-    Unit tests for OutputCatcher v. 0.0.1
+    Unit tests for OutputCatcher
 
     -Christopher Welborn 12-06-2016
 """
@@ -17,6 +17,10 @@ from outputcatcher import (
     StdErrCatcher,
     StdOutCatcher
 )
+SCRIPTDIR = os.path.abspath(sys.path[0])
+if not SCRIPTDIR.endswith('/test'):
+    SCRIPTDIR = os.path.join(SCRIPTDIR, 'test')
+PROCOUTHELPER = os.path.join(SCRIPTDIR, 'processoutput_test_helper.py')
 
 
 class OutputCatcherTests(unittest.TestCase):
@@ -178,27 +182,79 @@ class OutputCatcherTests(unittest.TestCase):
 class ProcessOutputTests(unittest.TestCase):
     """ Tests for the ProcessOutput object. """
 
-    @unittest.skipUnless(os.path.exists('/bin/ls'), 'Missing ls exe.')
-    def test_ProcessOutput(self):
-        """ ProcessOutput should receive stdout or stderr. """
-        with ProcessOutput(['ls']) as out:
+    def get_helper_args(self, stdin=False, stdout=True, stderr=False):
+        """ Build a command to run the ProcessOutput test helper, with correct
+            arguments for the helper script.
+        """
+        cmdargs = set()
+        if stdin:
+            cmdargs.add('--stdin')
+        if stdout:
+            cmdargs.add('--stdout')
+        if stderr:
+            cmdargs.add('--stderr')
+        if not cmdargs:
+            cmdargs = ['--stdout']
+        cmd = [sys.executable, PROCOUTHELPER]
+        cmd.extend(cmdargs)
+        return cmd
+
+    @unittest.skipUnless(
+        os.path.exists(PROCOUTHELPER),
+        'Missing {}.'.format(PROCOUTHELPER)
+    )
+    def test_ProcessOutput_output(self):
+        """ ProcessOutput.output should catch both stdout and stderr. """
+        with ProcessOutput(self.get_helper_args(stdout=True)) as out:
             self.assertGreater(
                 len(out.stdout),
                 0,
                 msg='Failed to get stdout output from ProcessOutput!'
             )
-        with ProcessOutput(['ls', '/totally_nonexistent_dir']) as out:
+        with ProcessOutput(self.get_helper_args(stderr=True)) as out:
             self.assertGreater(
                 len(out.stderr),
                 0,
                 msg='Failed to get stderr output from ProcessOutput!'
             )
+        with ProcessOutput(
+                self.get_helper_args(stdout=True, stderr=True)) as out:
+            self.assertGreater(
+                len(out.stderr),
+                0,
+                msg=' '.join((
+                    'Failed to get stderr output from ProcessOutput',
+                    'when both stdout/stderr are available!',
+                ))
+            )
+            self.assertGreater(
+                len(out.stdout),
+                0,
+                msg=' '.join((
+                    'Failed to get stdout output from ProcessOutput',
+                    'when both stdout/stderr are available!',
+                ))
+            )
+            self.assertIn(
+                b'stdout',
+                out.stdout,
+                msg='Output did not match the expected format, no name.'
+            )
+            self.assertIn(
+                b'stderr',
+                out.stderr,
+                msg='Output did not match the expected format, no name.'
+            )
 
-    @unittest.skipUnless(os.path.exists('/bin/cat'), 'Missing cat exe.')
+    @unittest.skipUnless(
+        os.path.exists(PROCOUTHELPER),
+        'Missing {}.'.format(PROCOUTHELPER)
+    )
     def test_ProcessOutput_stdin(self):
         """ ProcessOutput should pipe stdin as a string to the process. """
         stdinstr = 'This is a test.'
-        with ProcessOutput(['cat'], stdin_data=stdinstr) as out:
+        with ProcessOutput(
+                self.get_helper_args(stdin=True), stdin_data=stdinstr) as out:
             self.assertGreater(
                 len(out.stdout),
                 0,
@@ -210,10 +266,16 @@ class ProcessOutputTests(unittest.TestCase):
                 msg='Failed to pipe stdin data, and receive it from `cat`!'
             )
 
+    @unittest.skipUnless(
+        os.path.exists(PROCOUTHELPER),
+        'Missing {}.'.format(PROCOUTHELPER)
+    )
     def test_ProcessOutput_stdin_bytes(self):
         """ ProcessOutput should pipe stdin as bytes to the process. """
         stdinbytes = 'This is a test.'.encode()
-        with ProcessOutput(['cat'], stdin_data=stdinbytes) as out:
+        with ProcessOutput(
+                self.get_helper_args(stdin=True),
+                stdin_data=stdinbytes) as out:
             self.assertGreater(
                 len(out.stdout),
                 0,
@@ -224,6 +286,7 @@ class ProcessOutputTests(unittest.TestCase):
                 stdinbytes,
                 msg='Failed to pipe stdin data, and receive it from `cat`!'
             )
+
 
 if __name__ == '__main__':
     sys.exit(unittest.main(argv=sys.argv))

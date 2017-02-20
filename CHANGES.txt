@@ -1,3 +1,4 @@
+v0.0.8 02/19/17 -- Fixed StdOutCatcher/StdErrCatcher max_length.
 v0.0.7 02/19/17 -- Added iter_stderr and iter_stdout methods to ProcessOutput.
 v0.0.5 12/06/16 -- Add ProcessOutput to catch both stdout and stderr from processes.
 v0.0.4 12/06/16 -- Updated the docs.

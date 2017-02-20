@@ -1,8 +1,10 @@
 OutputCatcher
 =============
 
-A context manager that catches/suppresses output from ``sys.stderr`` and
-``sys.stdout``.
+Provides a context manager that catches/suppresses output from
+``sys.stderr`` and ``sys.stdout`` (StdOutCatcher, StdErrCatcher). Also
+provides an easy way to gather both stdout and stderr from processes
+while optionally piping stdin to the process as a ``str`` or ``bytes``.
 
 API
 ---
@@ -13,6 +15,9 @@ StdOutCatcher / StdErrCatcher
 .. code:: python
 
     StdOutCatcher(escaped=False, max_length=0)
+
+This will suppress any output running through ``sys.stdout`` or
+``sys.stderr``, and save it in an attribute for possible future use.
 
 Arguments
 ^^^^^^^^^
@@ -47,10 +52,17 @@ ProcessOutput
 
     ProcessOutput(args, stdin_data=None, timeout=None, **popenkwargs)
 
+This runs an external process using ``subprocess.Popen`` and gathers
+both the ``stdout`` and ``stderr`` output in an attribute for future
+use. ``stdin`` data can be piped to the process initially, by providing
+the data as a ``str`` or ``bytes`` during initialization.
+
 After initializing a ``ProcessOutput`` object with a command to run, and
 optional stdin input data, it can either be used as a context manager or
-the ``run()`` method must be called. ``timeout`` is passed to
-``self.proc.wait()`` before returning the output.
+the ``run()`` method must be called.
+
+``timeout`` is passed to ``self.proc.wait()`` before returning the
+output.
 
 Arguments
 ^^^^^^^^^
@@ -90,3 +102,8 @@ Usage
         assert p.stdout.decode() == stdin_data
         # cat received the data, and piped it back.
         print(p.stdout.decode())
+
+    # Iterating over stdout data:
+    p = ProcessOutput(['ls'])
+    for line in p.iter_stdout():
+        print(line)

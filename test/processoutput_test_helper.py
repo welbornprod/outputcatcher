@@ -19,8 +19,6 @@ SCRIPTDIR = os.path.abspath(sys.path[0])
 
 def main(args):
     """ Main entry point, expects args from sys. """
-    if pop_flag_opt(args, ('-i', '--stdin')):
-        return do_stdin(args)
     return do_output(args)
 
 
@@ -33,20 +31,29 @@ def do_output(args):
         fs.add(sys.stderr)
     if pop_flag_opt(args, ('-b', '--both')):
         fs.update((sys.stdout, sys.stderr))
+    stdin = pop_flag_opt(args, ('-i', '--stdin'))
+    name = pop_flag_opt(args, ('-n', '--name'))
+    stream = pop_flag_opt(args, ('-s', '--stream'))
+    if stdin:
+        msg = sys.stdin.read()
+    else:
+        msg = ('\n' if stream else ' ').join(args)
+    if not msg:
+        msg = '{} test line.'.format(NAME)
 
-    msg = ' '.join(args) or '{} test line.'.format(NAME)
+    def write_line(f, line):
+        if name:
+            print('{}: {}'.format(f.name, line), file=f)
+        else:
+            print(line, file=f)
+
     for f in fs or [sys.stdout]:
+        if stream:
+            for line in msg.split('\n'):
+                write_line(f, line)
+        else:
+            write_line(f, msg)
 
-        print('{}: {}'.format(f.name, msg), file=f)
-
-    return 0
-
-
-def do_stdin(args):
-    """ Echo the data from stdin, like `cat` but simpler. """
-    if sys.stdin.isatty() and sys.stdout.isatty():
-        print('\nReading from stdin until EOF (Ctrl + D)...\n')
-    sys.stdout.buffer.write(sys.stdin.buffer.read())
     return 0
 
 

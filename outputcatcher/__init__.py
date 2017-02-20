@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from .catchers import (
     __version__,
     ProcessOutput,

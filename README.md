@@ -90,4 +90,9 @@ with ProcessOutput(['cat'], stdin_data=stdin_data) as p:
     assert p.stdout.decode() == stdin_data
     # cat received the data, and piped it back.
     print(p.stdout.decode())
+
+# Iterating over stdout data:
+p = ProcessOutput(['ls'])
+for line in p.iter_stdout():
+    print(line)
 ```

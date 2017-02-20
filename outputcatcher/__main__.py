@@ -1,5 +1,6 @@
-import sys
+#!/usr/bin/env python3
 from __future__ import print_function
+import sys
 from .catchers import __version__, StdErrCatcher, StdOutCatcher
 
 if __name__ == '__main__':

@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import subprocess
 import sys
 from collections import namedtuple
 from tempfile import SpooledTemporaryFile
 
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 
 
 def escape_output(s):
@@ -64,34 +64,22 @@ class ProcessOutput(object):
     def __exit__(self, exctype, value, traceback):
         return False
 
-    def proc_output(self, proc):
-        """ Get process output, whether its on stdout or stderr.
-            Returns a tuple of strings (stdout_output, stderr_output).
-
-            Arguments:
-                proc  : a POpen() process to get output from.
-        """
-        # Get stdout
-        outlines = []
-        for line in iter(proc.stdout.readline, b''):
+    def _iter_proc_output(self, stream):
+        """ Iterate over proc.stdout or proc.stderr, yielding lines. """
+        if not hasattr(stream, 'readline'):
+            raise TypeError(
+                'Expecting a file with a readline method. Got: {}'.format(
+                    type(stream).__name__
+                )
+            )
+        for line in iter(stream.readline, b''):
             if line:
-                outlines.append(line.rstrip(b'\n'))
+                yield line.rstrip(b'\n')
             else:
                 break
-        # Get stderr
-        errlines = []
-        for line in iter(proc.stderr.readline, b''):
-            if line:
-                errlines.append(line.rstrip(b'\n'))
-            else:
-                break
-        return self.ProcOutput(b'\n'.join(outlines), b'\n'.join(errlines))
 
-    def run(self, timeout=None):
-        """ Run the command specified during init, and set self.stdout/stderr.
-            A ProcOutput (namedtuple) is returned with
-            (stdout_data, stderr_data) stored as bytes.
-            The output must be decoded (same as subprocess).
+    def _run(self):
+        """ Run the command, and set instance attribute values like self.proc.
         """
         if self.stdin_data is None:
             stdin_file = None
@@ -110,9 +98,43 @@ class ProcessOutput(object):
         self.pid = self.proc.pid
         if stdin_file is not None:
             stdin_file.close()
+
+    def iter_stderr(self):
+        """ Calls `_run()`, and yields stderr lines as they are received. """
+        self._run()
+        for line in self._iter_proc_output(self.proc.stderr):
+            yield line
+
+    def iter_stdout(self):
+        """ Calls `_run()`, and yields stdout lines as they are received. """
+        self._run()
+        for line in self._iter_proc_output(self.proc.stdout):
+            yield line
+
+    def proc_output(self, proc):
+        """ Get process output, whether its on stdout or stderr.
+            Returns a named tuple of strings,
+            ProcOutput(stdout_output, stderr_output).
+
+            Arguments:
+                proc  : a POpen() process to get output from.
+        """
+        return self.ProcOutput(
+            b'\n'.join(self._iter_proc_output(proc.stdout)),
+            b'\n'.join(self._iter_proc_output(proc.stderr))
+        )
+
+    def run(self, timeout=None):
+        """ Run the command specified during init, and set self.stdout/stderr.
+            A ProcOutput (namedtuple) is returned with
+            (stdout_data, stderr_data) stored as bytes.
+            The output must be decoded (same as subprocess).
+        """
+        self._run()
         procoutput = self.proc_output(self.proc)
         self.stdout, self.stderr = procoutput
         self.returncode = self.proc.wait(timeout=timeout or self.timeout)
+
         return procoutput
 
 

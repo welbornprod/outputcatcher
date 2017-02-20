@@ -182,19 +182,15 @@ class OutputCatcherTests(unittest.TestCase):
 class ProcessOutputTests(unittest.TestCase):
     """ Tests for the ProcessOutput object. """
 
-    def get_helper_args(self, stdin=False, stdout=True, stderr=False):
+    def get_helper_args(self, **kwargs):
         """ Build a command to run the ProcessOutput test helper, with correct
             arguments for the helper script.
+            The kwargs are flag names and values for the script.
         """
         cmdargs = set()
-        if stdin:
-            cmdargs.add('--stdin')
-        if stdout:
-            cmdargs.add('--stdout')
-        if stderr:
-            cmdargs.add('--stderr')
-        if not cmdargs:
-            cmdargs = ['--stdout']
+        for k in kwargs or {'stdout': True}:
+            if kwargs[k]:
+                cmdargs.add('--{}'.format(k.lower()))
         cmd = [sys.executable, PROCOUTHELPER]
         cmd.extend(cmdargs)
         return cmd
@@ -218,7 +214,10 @@ class ProcessOutputTests(unittest.TestCase):
                 msg='Failed to get stderr output from ProcessOutput!'
             )
         with ProcessOutput(
-                self.get_helper_args(stdout=True, stderr=True)) as out:
+                self.get_helper_args(
+                    stdout=True,
+                    stderr=True,
+                    name=True)) as out:
             self.assertGreater(
                 len(out.stderr),
                 0,
@@ -286,6 +285,39 @@ class ProcessOutputTests(unittest.TestCase):
                 stdinbytes,
                 msg='Failed to pipe stdin data, and receive it from `cat`!'
             )
+
+    @unittest.skipUnless(
+        os.path.exists(PROCOUTHELPER),
+        'Missing {}.'.format(PROCOUTHELPER)
+    )
+    def test_ProcessOutput_iter(self):
+        """ ProcessOutput should iterate over stderr/stdout data. """
+        stdinstr = 'this\nis\na\ntest'
+        expected = [
+            b'this',
+            b'is',
+            b'a',
+            b'test',
+        ]
+        p = ProcessOutput(
+            self.get_helper_args(stdin=True, stream=True),
+            stdin_data=stdinstr
+        )
+        self.assertListEqual(
+            list(p.iter_stdout()),
+            expected,
+            msg='Failed to accurately iterate over stdout output.'
+        )
+        # stderr should be the same.
+        p = ProcessOutput(
+            self.get_helper_args(stdin=True, stream=True, stderr=True),
+            stdin_data=stdinstr
+        )
+        self.assertListEqual(
+            list(p.iter_stderr()),
+            expected,
+            msg='Failed to accurately iterate over stderr output.'
+        )
 
 
 if __name__ == '__main__':

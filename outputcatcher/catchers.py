@@ -5,7 +5,7 @@ import sys
 from collections import namedtuple
 from tempfile import SpooledTemporaryFile
 
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 
 
 def escape_output(s):
@@ -149,7 +149,7 @@ class StdOutCatcher(object):
             # retrieve the captured output..
             print('output was: {}'.format(fakestdout.output))
     """
-    def __init__(self, escaped=False, max_length=160):
+    def __init__(self, escaped=False, max_length=0):
         # Use safe_output?
         self.escaped = escaped
         # Maximum length before trimming output
@@ -167,6 +167,7 @@ class StdOutCatcher(object):
     def __exit__(self, type, value, traceback):
         # Fix stdout.
         sys.stdout = sys.__stdout__
+        return False
 
     def flush(self):
         """ Doesn't do anything, but it's here for compatibility. """
@@ -208,9 +209,10 @@ class StdOutCatcher(object):
             s
         ))
         # Trim and block the next call if we are already at max_length.
-        if len(self.output) >= self.max_length:
+        if (self.max_length > 0) and len(self.output) >= self.max_length:
             self.output = self.output[:self.max_length]
             self.max_exceeded = True
+        # Output length may have been trimmed.
         self.length = len(self.output)
         return len(s)
 
@@ -224,6 +226,7 @@ class StdErrCatcher(StdOutCatcher):
     def __exit__(self, type, value, traceback):
         # Fix stderr.
         sys.stderr = sys.__stderr__
+        return False
 
     @property
     def name(self):

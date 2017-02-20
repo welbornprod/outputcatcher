@@ -10,6 +10,7 @@
 import os
 import sys
 import unittest
+from subprocess import CalledProcessError
 
 from outputcatcher import (
     __version__,
@@ -199,6 +200,39 @@ class ProcessOutputTests(unittest.TestCase):
         os.path.exists(PROCOUTHELPER),
         'Missing {}.'.format(PROCOUTHELPER)
     )
+    def test_ProcessOutput_iter(self):
+        """ ProcessOutput should iterate over stderr/stdout data. """
+        stdinstr = 'this\nis\na\ntest'
+        expected = [
+            b'this',
+            b'is',
+            b'a',
+            b'test',
+        ]
+        p = ProcessOutput(
+            self.get_helper_args(stdin=True, stream=True),
+            stdin_data=stdinstr
+        )
+        self.assertListEqual(
+            list(p.iter_stdout()),
+            expected,
+            msg='Failed to accurately iterate over stdout output.'
+        )
+        # stderr should be the same.
+        p = ProcessOutput(
+            self.get_helper_args(stdin=True, stream=True, stderr=True),
+            stdin_data=stdinstr
+        )
+        self.assertListEqual(
+            list(p.iter_stderr()),
+            expected,
+            msg='Failed to accurately iterate over stderr output.'
+        )
+
+    @unittest.skipUnless(
+        os.path.exists(PROCOUTHELPER),
+        'Missing {}.'.format(PROCOUTHELPER)
+    )
     def test_ProcessOutput_output(self):
         """ ProcessOutput.output should catch both stdout and stderr. """
         with ProcessOutput(self.get_helper_args(stdout=True)) as out:
@@ -245,6 +279,13 @@ class ProcessOutputTests(unittest.TestCase):
                 msg='Output did not match the expected format, no name.'
             )
 
+    def test_ProcessOutput_raises(self):
+        """ ProcessOutput should raise CalledProcessError on failures. """
+        with self.assertRaises(CalledProcessError):
+            with ProcessOutput(['this_should_not_ever_exist']):
+                # This should never run.
+                self.fail('Failed to raise CalledProcessError.')
+
     @unittest.skipUnless(
         os.path.exists(PROCOUTHELPER),
         'Missing {}.'.format(PROCOUTHELPER)
@@ -285,39 +326,6 @@ class ProcessOutputTests(unittest.TestCase):
                 stdinbytes,
                 msg='Failed to pipe stdin data, and receive it from `cat`!'
             )
-
-    @unittest.skipUnless(
-        os.path.exists(PROCOUTHELPER),
-        'Missing {}.'.format(PROCOUTHELPER)
-    )
-    def test_ProcessOutput_iter(self):
-        """ ProcessOutput should iterate over stderr/stdout data. """
-        stdinstr = 'this\nis\na\ntest'
-        expected = [
-            b'this',
-            b'is',
-            b'a',
-            b'test',
-        ]
-        p = ProcessOutput(
-            self.get_helper_args(stdin=True, stream=True),
-            stdin_data=stdinstr
-        )
-        self.assertListEqual(
-            list(p.iter_stdout()),
-            expected,
-            msg='Failed to accurately iterate over stdout output.'
-        )
-        # stderr should be the same.
-        p = ProcessOutput(
-            self.get_helper_args(stdin=True, stream=True, stderr=True),
-            stdin_data=stdinstr
-        )
-        self.assertListEqual(
-            list(p.iter_stderr()),
-            expected,
-            msg='Failed to accurately iterate over stderr output.'
-        )
 
 
 if __name__ == '__main__':

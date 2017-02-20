@@ -93,11 +93,12 @@ class ProcessOutput(object):
             'stdout': subprocess.PIPE,
             'stderr': subprocess.PIPE,
         })
-
-        self.proc = subprocess.Popen(self.args, **popenkwargs)
-        self.pid = self.proc.pid
-        if stdin_file is not None:
-            stdin_file.close()
+        try:
+            self.proc = subprocess.Popen(self.args, **popenkwargs)
+            self.pid = self.proc.pid
+        finally:
+            if stdin_file is not None:
+                stdin_file.close()
 
     def iter_stderr(self):
         """ Calls `_run()`, and yields stderr lines as they are received. """
@@ -142,7 +143,7 @@ class StdOutCatcher(object):
     """ Catches stdout for code inside the 'with' block.
 
         Usage:
-            with StdOutCatcher(safe=True, maxlength=160) as fakestdout:
+            with StdOutCatcher(escaped=True, max_length=160) as fakestdout:
                 # stdout is stored in fakestdout.output
                 print('okay')
             # stdout is back to normal

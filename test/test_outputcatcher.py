@@ -280,11 +280,13 @@ class ProcessOutputTests(unittest.TestCase):
             )
 
     def test_ProcessOutput_raises(self):
-        """ ProcessOutput should raise CalledProcessError on failures. """
-        with self.assertRaises(CalledProcessError):
-            with ProcessOutput(['this_should_not_ever_exist']):
+        """ ProcessOutput should raise errors on failures. """
+        stdinstr = 'This is a test.'
+        cmd = ['process_output-this-should-not-ever-exist']
+        with self.assertRaises(FileNotFoundError):
+            with ProcessOutput(cmd, stdin_data=stdinstr):
                 # This should never run.
-                self.fail('Failed to raise CalledProcessError.')
+                self.fail('Failed to raise FileNotFoundError.')
 
     @unittest.skipUnless(
         os.path.exists(PROCOUTHELPER),

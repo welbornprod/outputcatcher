@@ -5,7 +5,7 @@ import sys
 from collections import namedtuple
 from tempfile import SpooledTemporaryFile
 
-__version__ = '0.0.8'
+__version__ = '0.0.9'
 
 
 def escape_output(s):

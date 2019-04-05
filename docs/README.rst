@@ -26,7 +26,7 @@ Arguments
    without quotes. Default: ``False``
 -  ``max_length``: If non-zero, final output will not exceed
    ``max_length``. Once ``max_length`` is reached, further ``write()``
-   calls will not write to the original stream. Default: ``0``
+   calls will be ignored. Default: ``0``
 
 Usage
 ^^^^^
@@ -64,6 +64,14 @@ the ``run()`` method must be called.
 ``timeout`` is passed to ``self.proc.wait()`` before returning the
 output.
 
+**Note**: As of Python 3.5,
+`subprocess.run() <https://docs.python.org/3/library/subprocess.html?highlight=subprocess.run#subprocess.run>`__
+can do much of this through the ``input`` argument and the
+`subprocess.CompletedProcess <https://docs.python.org/3/library/subprocess.html?highlight=subprocess.CompletedProcess#subprocess.CompletedProcess>`__
+return value. Though ``ProcessOutput`` does provide a handy method for
+iterating over output as it is received (``iter_stdout``, and
+``iter_stderr``).
+
 Arguments
 ^^^^^^^^^
 
@@ -72,7 +80,8 @@ Arguments
    ``None``
 -  ``timeout``: Time to wait for process after collecting data. Default:
    ``None``
--  ``**popenkwargs``: Any extra kwargs for Popen().
+-  ``**popenkwargs``: Any extra kwargs for Popen(). ``stdin``,
+   ``stdout``, and ``stderr`` are ignored.
 
 Usage
 ^^^^^

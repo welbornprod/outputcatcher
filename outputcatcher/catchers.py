@@ -28,9 +28,9 @@ class ProcessOutput(object):
             or:
                 `subprocess.run(..., input=b'test')`
             ..for simple cases.
-            ProcessOutput can still be useful for programs that output both
-            `stdout` and `stderr` though.
-
+            or:
+                `proc = subprocess.Popen(['ls', '/'])`
+                `stdout, stderr = proc.communicate()`
     """
     # Holds data returned by ProcessOutput.proc_output()
     ProcOutput = namedtuple('ProcOutput', ('stdout', 'stderr'))
